@@ -13,7 +13,7 @@ FEISHU_DOC_TOKEN = os.getenv("FEISHU_DOC_TOKEN", "")
 
 # 摘要配置
 SUMMARY_CONFIG = {
-    "max_length": 100,
+    "max_length": 200,
     "model": "moonshot-v1-8k",
     "temperature": 0.3,
 }
@@ -458,7 +458,7 @@ RELEVANCE_KEYWORDS = {
 FEISHU_CONFIG = {
     "doc_title_template": "电力领域情报简报 - {date}",
     "max_items_per_category": 15,
-    "summary_length": 100,
+    "summary_length": 200,
 }
 
 # arXiv API 配置
