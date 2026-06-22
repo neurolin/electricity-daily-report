@@ -1,6 +1,6 @@
 """
 飞书推送模块
-支持推送到飞书文档和群聊机器人
+支持推送到飞书新版云文档（wiki/ 路径）和群聊机器人
 """
 import requests
 import json
@@ -20,7 +20,7 @@ class FeishuPusher:
         self.token_expires = 0
 
     def _get_access_token(self):
-        """获取飞书tenant_access_token"""
+        """获取飞书 tenant_access_token"""
         if self.access_token and time.time() < self.token_expires - 300:
             return self.access_token
 
@@ -32,7 +32,7 @@ class FeishuPusher:
             resp = requests.post(
                 "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal",
                 json={"app_id": self.app_id, "app_secret": self.app_secret},
-                timeout=10
+                timeout=10,
             )
             result = resp.json()
             if result.get("code") == 0:
@@ -46,31 +46,6 @@ class FeishuPusher:
             print(f"⚠️ 获取token异常: {e}")
             return None
 
-    def _create_doc(self, title):
-        """创建飞书文档"""
-        token = self._get_access_token()
-        if not token:
-            return None
-
-        try:
-            resp = requests.post(
-                "https://open.feishu.cn/open-apis/docx/v1/documents",
-                headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
-                json={"title": title, "folder_token": ""},
-                timeout=10
-            )
-            result = resp.json()
-            if result.get("code") == 0:
-                doc_token = result["data"]["document"]["document_id"]
-                print(f"  ✓ 创建文档成功: {doc_token}")
-                return doc_token
-            else:
-                print(f"  ⚠️ 创建文档失败: {result}")
-                return None
-        except Exception as e:
-            print(f"  ⚠️ 创建文档异常: {e}")
-            return None
-
     def _build_blocks(self, items):
         """构建飞书文档内容块"""
         today = datetime.now().strftime("%Y年%m月%d日")
@@ -81,8 +56,15 @@ class FeishuPusher:
             "block_type": 1,
             "heading": {
                 "level": 1,
-                "elements": [{"type": "textRun", "textRun": {"content": f"📋 电力领域情报简报 - {today}"}}]
-            }
+                "elements": [
+                    {
+                        "type": "textRun",
+                        "textRun": {
+                            "content": f"📋 电力领域情报简报 - {today}"
+                        },
+                    }
+                ],
+            },
         })
 
         # 2. 概述
@@ -99,8 +81,13 @@ class FeishuPusher:
         blocks.append({
             "block_type": 2,
             "text": {
-                "elements": [{"type": "textRun", "textRun": {"content": overview}}]
-            }
+                "elements": [
+                    {
+                        "type": "textRun",
+                        "textRun": {"content": overview},
+                    }
+                ]
+            },
         })
 
         # 3. 分隔线
@@ -118,13 +105,39 @@ class FeishuPusher:
                 "block_type": 1,
                 "heading": {
                     "level": 2,
-                    "elements": [{"type": "textRun", "textRun": {"content": f"{icon} {category} ({len(cat_items)}条)"}}]
-                }
+                    "elements": [
+                        {
+                            "type": "textRun",
+                            "textRun": {
+                                "content": f"{icon} {category} ({len(cat_items)}条)"
+                            },
+                        }
+                    ],
+                },
             })
 
             # 按来源类型分组
-            for source_type in ["学术期刊", "预印本", "政策与行业", "市场报告与行业", "技术框架与标准", "会议与论坛", "行业博客与资讯", "YouTube/博客", "网页", "RSS"]:
-                type_items = [i for i in cat_items if i["source_type"] == source_type or (source_type == "网页" and i["source_type"] not in ["学术期刊", "预印本", "RSS"])]
+            for source_type in [
+                "学术期刊",
+                "预印本",
+                "政策与行业",
+                "市场报告与行业",
+                "技术框架与标准",
+                "会议与论坛",
+                "行业博客与资讯",
+                "YouTube/博客",
+                "网页",
+                "RSS",
+            ]:
+                type_items = [
+                    i
+                    for i in cat_items
+                    if i["source_type"] == source_type
+                    or (
+                        source_type == "网页"
+                        and i["source_type"] not in ["学术期刊", "预印本", "RSS"]
+                    )
+                ]
                 if not type_items:
                     continue
 
@@ -133,8 +146,15 @@ class FeishuPusher:
                     "block_type": 1,
                     "heading": {
                         "level": 3,
-                        "elements": [{"type": "textRun", "textRun": {"content": f"📑 {source_type}"}}]
-                    }
+                        "elements": [
+                            {
+                                "type": "textRun",
+                                "textRun": {
+                                    "content": f"📑 {source_type}"
+                                },
+                            }
+                        ],
+                    },
                 })
 
                 # 每条信息
@@ -144,10 +164,22 @@ class FeishuPusher:
                         "block_type": 2,
                         "text": {
                             "elements": [
-                                {"type": "textRun", "textRun": {"content": "📌 ", "text_style": {"bold": True}}},
-                                {"type": "textRun", "textRun": {"content": item["title"], "text_style": {"bold": True}}}
+                                {
+                                    "type": "textRun",
+                                    "textRun": {
+                                        "content": "📌 ",
+                                        "text_style": {"bold": True},
+                                    },
+                                },
+                                {
+                                    "type": "textRun",
+                                    "textRun": {
+                                        "content": item["title"],
+                                        "text_style": {"bold": True},
+                                    },
+                                },
                             ]
-                        }
+                        },
                     })
 
                     # AI摘要
@@ -155,17 +187,30 @@ class FeishuPusher:
                     blocks.append({
                         "block_type": 2,
                         "text": {
-                            "elements": [{"type": "textRun", "textRun": {"content": f"💡 {summary_text}"}}]
-                        }
+                            "elements": [
+                                {
+                                    "type": "textRun",
+                                    "textRun": {
+                                        "content": f"💡 {summary_text}"
+                                    },
+                                }
+                            ]
+                        },
                     })
 
                     # 链接和来源
-                    link_text = f"🔗 原文链接 | 📰 {item['source_name']}"
+                    link_text = f"🔗 {item['link']}
+📰 {item['source_name']}"
                     blocks.append({
                         "block_type": 2,
                         "text": {
-                            "elements": [{"type": "textRun", "textRun": {"content": link_text}}]
-                        }
+                            "elements": [
+                                {
+                                    "type": "textRun",
+                                    "textRun": {"content": link_text},
+                                }
+                            ]
+                        },
                     })
 
                     # 标签
@@ -175,60 +220,81 @@ class FeishuPusher:
                             "block_type": 2,
                             "text": {
                                 "elements": [
-                                    {"type": "textRun", "textRun": {"content": "🏷️ ", "text_style": {"italic": True}}},
-                                    {"type": "textRun", "textRun": {"content": tags, "text_style": {"italic": True}}}
+                                    {
+                                        "type": "textRun",
+                                        "textRun": {
+                                            "content": "🏷️ ",
+                                            "text_style": {"italic": True},
+                                        },
+                                    },
+                                    {
+                                        "type": "textRun",
+                                        "textRun": {
+                                            "content": tags,
+                                            "text_style": {"italic": True},
+                                        },
+                                    },
                                 ]
-                            }
+                            },
                         })
 
                     # 小分隔
-                    blocks.append({"block_type": 11, "divider": {"color": {"red": 200, "green": 200, "blue": 200, "alpha": 1}}})
+                    blocks.append({
+                        "block_type": 11,
+                        "divider": {
+                            "color": {
+                                "red": 200,
+                                "green": 200,
+                                "blue": 200,
+                                "alpha": 1,
+                            }
+                        },
+                    })
 
         # 5. 页脚
         blocks.append({
             "block_type": 2,
             "text": {
-                "elements": [{"type": "textRun", "textRun": {"content": f"
+                "elements": [
+                    {
+                        "type": "textRun",
+                        "textRun": {
+                            "content": f"
 ---
 📌 本简报由AI自动生成，仅供学术参考
-⏰ 下次更新: {datetime.now().strftime('%Y-%m-%d')} 08:00"}}]
-            }
+⏰ 下次更新: {datetime.now().strftime('%Y-%m-%d')} 08:00"
+                        },
+                    }
+                ]
+            },
         })
 
         return blocks
 
     def push_to_doc(self, items):
         """推送到飞书文档"""
+        doc_token = self.doc_token
+        if not doc_token:
+            print("⚠️ 未配置 FEISHU_DOC_TOKEN")
+            return False
+
         token = self._get_access_token()
         if not token:
             return False
 
-        # 使用已有文档或创建新文档
-        doc_token = self.doc_token
-        if not doc_token:
-            today = datetime.now().strftime("%Y%m%d")
-            title = f"电力领域情报简报-{today}"
-            doc_token = self._create_doc(title)
-            if not doc_token:
-                return False
-
         try:
             blocks = self._build_blocks(items)
-
-            # 飞书文档API: 追加内容块
-            # 注意：实际API需要先获取文档的block_id，然后batch_create
-            # 这里简化处理，使用文档的root block
 
             # 获取文档root block
             resp = requests.get(
                 f"https://open.feishu.cn/open-apis/docx/v1/documents/{doc_token}/blocks",
                 headers={"Authorization": f"Bearer {token}"},
-                timeout=10
+                timeout=10,
             )
             doc_info = resp.json()
 
             if doc_info.get("code") != 0:
-                print(f"  ⚠️ 获取文档信息失败: {doc_info}")
+                print(f"⚠️ 获取文档信息失败: {doc_info}")
                 return False
 
             root_block = doc_info["data"]["items"][0]["block_id"]
@@ -236,28 +302,31 @@ class FeishuPusher:
             # 分批追加内容（每批最多50个block）
             batch_size = 50
             for i in range(0, len(blocks), batch_size):
-                batch = blocks[i:i+batch_size]
+                batch = blocks[i : i + batch_size]
                 resp = requests.post(
                     f"https://open.feishu.cn/open-apis/docx/v1/documents/{doc_token}/blocks/{root_block}/children",
-                    headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+                    headers={
+                        "Authorization": f"Bearer {token}",
+                        "Content-Type": "application/json",
+                    },
                     json={"children": batch},
-                    timeout=30
+                    timeout=30,
                 )
                 result = resp.json()
                 if result.get("code") != 0:
-                    print(f"  ⚠️ 追加内容失败(batch {i//batch_size+1}): {result}")
+                    print(f"⚠️ 追加内容失败(batch {i//batch_size+1}): {result}")
                     return False
                 time.sleep(0.5)
 
-            print(f"  ✓ 推送完成，共 {len(blocks)} 个内容块")
+            print(f"✓ 推送完成，共 {len(blocks)} 个内容块")
 
             # 获取文档URL
-            doc_url = f"https://www.feishu.cn/docx/{doc_token}"
-            print(f"  📄 文档链接: {doc_url}")
+            doc_url = f"https://www.feishu.cn/wiki/{doc_token}"
+            print(f"📄 文档链接: {doc_url}")
             return True
 
         except Exception as e:
-            print(f"  ⚠️ 推送异常: {e}")
+            print(f"⚠️ 推送异常: {e}")
             return False
 
     def push_to_webhook(self, items, webhook_url):
@@ -274,40 +343,49 @@ class FeishuPusher:
             "msg_type": "interactive",
             "card": {
                 "header": {
-                    "title": {"tag": "plain_text", "content": f"📋 电力领域情报简报 - {today}"},
-                    "template": "blue"
+                    "title": {
+                        "tag": "plain_text",
+                        "content": f"📋 电力领域情报简报 - {today}",
+                    },
+                    "template": "blue",
                 },
                 "elements": [
                     {
                         "tag": "div",
-                        "text": {"tag": "lark_md", "content": f"**本期共收录 {total} 条信息**
+                        "text": {
+                            "tag": "lark_md",
+                            "content": f"**本期共收录 {total} 条信息**
 • 微电网与虚拟电厂
-• 电力系统网络安全"}
+• 电力系统网络安全",
+                        },
                     },
                     {"tag": "hr"},
-                ]
-            }
+                ],
+            },
         }
 
         # 添加前5条信息
         for item in items[:5]:
             card["card"]["elements"].append({
                 "tag": "div",
-                "text": {"tag": "lark_md", "content": f"**📌 {item['title'][:50]}**
+                "text": {
+                    "tag": "lark_md",
+                    "content": f"**📌 {item['title'][:50]}**
 💡 {item.get('ai_summary', '暂无摘要')[:80]}...
-🔗 [{item['source_name']}]({item['link']})"}
+🔗 [{item['source_name']}]({item['link']})",
+                },
             })
 
         try:
             resp = requests.post(webhook_url, json=card, timeout=10)
             if resp.json().get("code") == 0:
-                print("  ✓ 群消息推送成功")
+                print("✓ 群消息推送成功")
                 return True
             else:
-                print(f"  ⚠️ 群推送失败: {resp.json()}")
+                print(f"⚠️ 群推送失败: {resp.json()}")
                 return False
         except Exception as e:
-            print(f"  ⚠️ 群推送异常: {e}")
+            print(f"⚠️ 群推送异常: {e}")
             return False
 
 
@@ -327,14 +405,15 @@ def push_to_feishu(items, webhook_url=None):
 
 if __name__ == "__main__":
     # 测试
-    test_items = [{
-        "title": "Test",
-        "ai_summary": "Test summary",
-        "link": "https://example.com",
-        "source_name": "Test Source",
-        "source_type": "学术期刊",
-        "category": "微电网与虚拟电厂",
-        "matched_keywords": ["微电网"]
-    }]
+    test_items = [
+        {
+            "title": "Test",
+            "ai_summary": "Test summary",
+            "link": "https://example.com",
+            "source_name": "Test Source",
+            "source_type": "学术期刊",
+            "category": "微电网与虚拟电厂",
+            "matched_keywords": ["微电网"],
+        }
+    ]
     push_to_feishu(test_items)
-
