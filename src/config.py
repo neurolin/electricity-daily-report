@@ -59,14 +59,6 @@ MICROGRID_VPP_SOURCES = {
             "description": "国内电力系统自动化顶级期刊"
         },
         {
-            "name": "中国电机工程学报",
-            "type": "web",
-            "url": "https://www.pcsee.ac.cn/",
-            "selector": ".article-item a, .content-list a",
-            "keywords": ["微电网", "新能源", "振荡", "稳定性", "并网"],
-            "description": "中国电机工程学会主办，电力系统稳定、新能源并网"
-        },
-        {
             "name": "电力系统保护与控制",
             "type": "web",
             "url": "https://www.dlbh.net/",
@@ -75,19 +67,18 @@ MICROGRID_VPP_SOURCES = {
             "description": "微电网保护、黑启动策略"
         },
         {
-            "name": "电工技术学报",
-            "type": "web",
-            "url": "https://www.cjee.cn/",
-            "selector": ".article-item a, .paper-list a",
-            "keywords": ["微电网", "逆变器", "构网型", "储能", "控制"],
-            "description": "微电网逆变器控制、构网型储能"
-        },
-        {
             "name": "arXiv eess.SY (系统与控制)",
             "type": "rss",
             "url": "http://export.arxiv.org/rss/eess.SY",
             "keywords": ["microgrid", "VPP", "control", "optimization", "energy"],
             "description": "预印本平台系统与控制方向"
+        },
+        {
+            "name": "Nature Energy",
+            "type": "rss",
+            "url": "https://www.nature.com/nenergy.rss",
+            "keywords": ["grid", "energy", "power", "renewable", "storage"],
+            "description": "Nature子刊能源方向"
         },
     ],
     "政策与行业": [
@@ -108,20 +99,11 @@ MICROGRID_VPP_SOURCES = {
             "description": "国家能源政策与规划"
         },
         {
-            "name": "南方电网技术",
-            "type": "web",
-            "url": "https://www.csg.cn/",
-            "selector": ".news-list a, .article-list a",
-            "keywords": ["微电网", "虚拟电厂", "智能电网", "配电网"],
-            "description": "南方电网技术动态与年度报告"
-        },
-        {
-            "name": "国家电网",
-            "type": "web",
-            "url": "https://www.sgcc.com.cn/",
-            "selector": ".news-list a, .list a",
-            "keywords": ["微电网", "配电网", "新能源", "储能"],
-            "description": "国家电网技术动态"
+            "name": "北极星电力网",
+            "type": "rss",
+            "url": "https://news.bjx.com.cn/rss/",
+            "keywords": ["微电网", "虚拟电厂", "电力", "新能源", "储能"],
+            "description": "电力行业新闻"
         },
     ],
     "市场报告与行业": [
@@ -255,22 +237,6 @@ CYBERSECURITY_SOURCES = {
             "description": "电力信息物理系统FDIA检测、虚假数据注入攻击"
         },
         {
-            "name": "中国电机工程学报 (网络安全)",
-            "type": "web",
-            "url": "https://www.pcsee.ac.cn/",
-            "selector": ".article-item a, .content-list a",
-            "keywords": ["网络安全", "攻击", "防御", "数据驱动", "安全防御"],
-            "description": "新型电力系统安全防御体系"
-        },
-        {
-            "name": "南方电网技术 (网络安全)",
-            "type": "web",
-            "url": "https://www.csg.cn/",
-            "selector": ".news-list a, .article-list a",
-            "keywords": ["网络安全", "内部威胁", "CPS", "电力系统"],
-            "description": "电力CPS内部威胁研究"
-        },
-        {
             "name": "arXiv cs.CR (密码与安全)",
             "type": "rss",
             "url": "http://export.arxiv.org/rss/cs.CR",
@@ -284,6 +250,13 @@ CYBERSECURITY_SOURCES = {
             "keywords": ["encryption", "attack detection", "security", "forensics"],
             "description": "信息取证与安全顶级期刊"
         },
+        {
+            "name": "SecurityWeek - 能源安全",
+            "type": "rss",
+            "url": "https://www.securityweek.com/rss/energy",
+            "keywords": ["energy", "power", "cybersecurity", "attack"],
+            "description": "能源行业网络安全新闻"
+        },
     ],
     "技术框架与标准": [
         {
@@ -295,14 +268,6 @@ CYBERSECURITY_SOURCES = {
             "description": "工业控制系统攻击知识库"
         },
         {
-            "name": "DER Security Corp",
-            "type": "web",
-            "url": "https://www.dersecurity.com/",
-            "selector": ".vulnerability-item, .news a",
-            "keywords": ["DER", "vulnerability", "security", "distributed energy"],
-            "description": "分布式能源网络安全漏洞数据库"
-        },
-        {
             "name": "UL Solutions - AI安全",
             "type": "web",
             "url": "https://www.ul.com/resources/ul-3115",
@@ -312,14 +277,6 @@ CYBERSECURITY_SOURCES = {
         },
     ],
     "会议与论坛": [
-        {
-            "name": "IEEE Cybersecurity and AI-Based Systems",
-            "type": "web",
-            "url": "https://ieee-cybersecurity.org/",
-            "selector": ".news a, .announcement a",
-            "keywords": ["cybersecurity", "AI", "power", "energy", "attack"],
-            "description": "电力、核能单元网络安全专门议题"
-        },
         {
             "name": "Black Hat / DEF CON (电力相关)",
             "type": "rss",
@@ -404,8 +361,7 @@ RELEVANCE_KEYWORDS = {
 
 # 飞书推送配置
 FEISHU_CONFIG = {
-    "doc_title_template": "📋 电力领域情报简报 - {date}",
+    "doc_title_template": "电力领域情报简报 - {date}",
     "max_items_per_category": 15,  # 每个分类最多推送条数
     "summary_length": 100,
 }
-
