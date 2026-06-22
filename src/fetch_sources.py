@@ -10,7 +10,6 @@ import json
 import time
 from datetime import datetime, timedelta
 from urllib.parse import urljoin
-import re
 
 from config import ALL_SOURCES, RELEVANCE_KEYWORDS
 
@@ -92,9 +91,9 @@ class SourceFetcher:
                 })
                 self.history.add(item_hash)
 
-            print(f"  ✓ {source['name']}: 抓取 {len(items)} 条")
+            print(f"  [OK] {source['name']}: 抓取 {len(items)} 条")
         except Exception as e:
-            print(f"  ✗ {source['name']}: RSS抓取失败 - {e}")
+            print(f"  [ERR] {source['name']}: RSS抓取失败 - {e}")
         return items
 
     def fetch_web(self, source, category):
@@ -141,9 +140,9 @@ class SourceFetcher:
                 })
                 self.history.add(item_hash)
 
-            print(f"  ✓ {source['name']}: 抓取 {len(items)} 条")
+            print(f"  [OK] {source['name']}: 抓取 {len(items)} 条")
         except Exception as e:
-            print(f"  ✗ {source['name']}: 网页抓取失败 - {e}")
+            print(f"  [ERR] {source['name']}: 网页抓取失败 - {e}")
         return items
 
     def fetch_arxiv(self, source, category):
@@ -179,9 +178,9 @@ class SourceFetcher:
                 })
                 self.history.add(item_hash)
 
-            print(f"  ✓ {source['name']}: 抓取 {len(items)} 条")
+            print(f"  [OK] {source['name']}: 抓取 {len(items)} 条")
         except Exception as e:
-            print(f"  ✗ {source['name']}: arXiv抓取失败 - {e}")
+            print(f"  [ERR] {source['name']}: arXiv抓取失败 - {e}")
         return items
 
     def fetch_all(self):
@@ -189,14 +188,13 @@ class SourceFetcher:
         all_items = []
 
         for category, source_groups in ALL_SOURCES.items():
-            print(f"
-{'='*60}")
-            print(f"📂 正在抓取: {category}")
-            print(f"{'='*60}")
+            print("")
+            print("=" * 60)
+            print(f"正在抓取: {category}")
+            print("=" * 60)
 
             for group_name, sources in source_groups.items():
-                print(f"
-  📑 {group_name}")
+                print(f"\n  来源组: {group_name}")
                 for source in sources:
                     source_type = source.get("type", "rss")
 
@@ -222,8 +220,7 @@ def fetch_all_sources():
 
 if __name__ == "__main__":
     items = fetch_all_sources()
-    print(f"
-{'='*60}")
+    print("")
+    print("=" * 60)
     print(f"总计抓取: {len(items)} 条新信息")
-    print(f"{'='*60}")
-
+    print("=" * 60)
