@@ -24,29 +24,29 @@ def push_to_feishu_webhook(items, webhook_url):
     sec_count = len([i for i in items if i["category"] == "电力系统网络安全"])
 
     # 构建文本消息内容
-    content = f"电力领域情报简报 - {today}\n\n"
-    content += f"本期共收录 {total} 条信息\n"
-    content += f"微电网与虚拟电厂: {mg_count} 条\n"
-    content += f"电力系统网络安全: {sec_count} 条\n"
-    content += f"生成时间: {datetime.now().strftime('%H:%M')}\n"
+    content = "电力领域情报简报 - " + today + "\n\n"
+    content += "本期共收录 " + str(total) + " 条信息\n"
+    content += "微电网与虚拟电厂: " + str(mg_count) + " 条\n"
+    content += "电力系统网络安全: " + str(sec_count) + " 条\n"
+    content += "生成时间: " + datetime.now().strftime('%H:%M') + "\n"
     content += "=" * 40 + "\n\n"
 
     # 每条信息
     for i, item in enumerate(items[:20], 1):
         category_icon = "[微电网]" if item["category"] == "微电网与虚拟电厂" else "[网络安全]"
-        content += f"{i}. {category_icon} {item['title'][:60]}\n"
-
+        content += str(i) + ". " + category_icon + " " + item['title'][:60] + "\n"
+        
         summary = item.get("ai_summary", "暂无摘要")
         if summary and summary != "[未配置API Key，无法生成摘要]":
-            content += f"   摘要: {summary[:100]}...\n"
-
-        content += f"   链接: {item['link']}\n"
-        content += f"   来源: {item['source_name']} | {item['source_type']}\n"
-
+            content += "   摘要: " + summary[:100] + "...\n"
+        
+        content += "   链接: " + item['link'] + "\n"
+        content += "   来源: " + item['source_name'] + " | " + item['source_type'] + "\n"
+        
         if item.get("matched_keywords"):
             tags = " | ".join(item["matched_keywords"][:3])
-            content += f"   标签: {tags}\n"
-
+            content += "   标签: " + tags + "\n"
+        
         content += "\n"
 
     # 页脚
@@ -64,16 +64,16 @@ def push_to_feishu_webhook(items, webhook_url):
     try:
         resp = requests.post(webhook_url, json=payload, timeout=30)
         result = resp.json()
-
+        
         if result.get("code") == 0:
-            print(f"[OK] 飞书群消息推送成功！共 {len(items)} 条信息")
+            print("[OK] 飞书群消息推送成功！共 " + str(len(items)) + " 条信息")
             return True
         else:
-            print(f"[WARN] 飞书推送失败: {result}")
+            print("[WARN] 飞书推送失败: " + str(result))
             return False
-
+            
     except Exception as e:
-        print(f"[WARN] 飞书推送异常: {e}")
+        print("[WARN] 飞书推送异常: " + str(e))
         return False
 
 
@@ -96,14 +96,14 @@ def main():
     """主工作流"""
     print("=" * 70)
     print("电力领域情报简报生成器")
-    print(f"启动时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print("启动时间: " + datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     print("=" * 70)
 
     # Step 1: 抓取信息
     print("\nStep 1: 抓取信息源...")
     items = fetch_all_sources()
 
-        if not items:
+    if not items:
         print("\n未抓取到新信息，但仍推送状态提示")
         # 推送空数据提示到飞书
         webhook_url = os.getenv("FEISHU_WEBHOOK_URL")
@@ -111,13 +111,13 @@ def main():
             payload = {
                 "msg_type": "text",
                 "content": {
-                    "text": f"电力领域情报简报 - {datetime.now().strftime('%Y-%m-%d')}\n\n今日未抓取到新信息。\n\n可能原因：\n- 信源暂无更新\n- 网络连接问题\n- 关键词过滤过严\n\n请检查日志了解详情。"
+                    "text": "电力领域情报简报 - " + datetime.now().strftime('%Y-%m-%d') + "\n\n今日未抓取到新信息。\n\n可能原因：\n- 信源暂无更新\n- 网络连接问题\n- 关键词过滤过严\n\n请检查日志了解详情。"
                 }
             }
             requests.post(webhook_url, json=payload, timeout=10)
         return
 
-    print(f"\n共抓取 {len(items)} 条新信息")
+    print("\n共抓取 " + str(len(items)) + " 条新信息")
 
     # 保存原始数据
     save_items_to_file(items, "data/raw_items.json")
@@ -132,7 +132,7 @@ def main():
     # Step 3: 推送到飞书群（Webhook）
     print("\nStep 3: 推送到飞书群...")
     webhook_url = os.getenv("FEISHU_WEBHOOK_URL")
-
+    
     if webhook_url:
         result = push_to_feishu_webhook(items, webhook_url)
         if result:
@@ -144,7 +144,7 @@ def main():
         print("   数据已保存至 data/summarized_items.json")
 
     print("=" * 70)
-    print(f"结束时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print("结束时间: " + datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     print("=" * 70)
 
 
