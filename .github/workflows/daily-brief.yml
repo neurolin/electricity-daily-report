@@ -48,9 +48,7 @@ jobs:
       - name: Run brief generator
         env:
           KIMI_API_KEY: ${{ secrets.KIMI_API_KEY }}
-          FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID }}
-          FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
-          FEISHU_DOC_TOKEN: ${{ secrets.FEISHU_DOC_TOKEN }}
+          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
         run: |
           if [ "${{ inputs.skip_fetch }}" == "true" ]; then
             python src/main.py --skip-fetch
@@ -68,13 +66,13 @@ jobs:
             data/summarized_items.json
             data/history.json
           retention-days: 7
+          if-no-files-found: ignore
 
       - name: Commit history
         if: success()
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add data/history.json
+          git add -f data/history.json
           git diff --cached --quiet || git commit -m "Update history $(date +%Y-%m-%d)"
-          git push
-
+          git push || true
