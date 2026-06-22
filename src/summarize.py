@@ -44,7 +44,7 @@ class Summarizer:
     def summarize(self, title, content, category):
         """单条摘要"""
         if not self.api_key:
-            print(f"  ⚠️ 未配置KIMI_API_KEY，跳过摘要: {title[:30]}...")
+            print(f"  [WARN] 未配置KIMI_API_KEY，跳过摘要: {title[:30]}...")
             return "[未配置API Key，无法生成摘要]"
 
         try:
@@ -78,22 +78,22 @@ class Summarizer:
                 return summary
             else:
                 error_msg = result.get("error", {}).get("message", "未知错误")
-                print(f"  ⚠️ API返回异常: {error_msg}")
+                print(f"  [WARN] API返回异常: {error_msg}")
                 return f"[摘要生成失败: {error_msg}]"
 
         except requests.exceptions.Timeout:
-            print(f"  ⚠️ API请求超时: {title[:30]}...")
+            print(f"  [WARN] API请求超时: {title[:30]}...")
             return "[API请求超时]"
         except Exception as e:
-            print(f"  ⚠️ 摘要失败: {title[:30]}... - {e}")
+            print(f"  [WARN] 摘要失败: {title[:30]}... - {e}")
             return f"[摘要生成失败: {str(e)[:50]}]"
 
     def batch_summarize(self, items):
         """批量摘要"""
-        print(f"
-{'='*60}")
-        print("🤖 开始AI摘要生成...")
-        print(f"{'='*60}")
+        print("")
+        print("=" * 60)
+        print("开始AI摘要生成...")
+        print("=" * 60)
 
         summarized_items = []
         for i, item in enumerate(items):
@@ -116,8 +116,8 @@ class Summarizer:
             # 控制API调用频率
             time.sleep(0.5)
 
-        print(f"
-✓ 摘要完成: {len(summarized_items)} 条")
+        print("")
+        print(f"[OK] 摘要完成: {len(summarized_items)} 条")
         return summarized_items
 
 
@@ -136,4 +136,3 @@ if __name__ == "__main__":
     }]
     result = batch_summarize(test_items)
     print(result[0]["ai_summary"])
-
