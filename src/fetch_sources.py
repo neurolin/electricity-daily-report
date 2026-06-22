@@ -55,7 +55,7 @@ class SourceFetcher:
         core_keywords = ["微电网", "microgrid", "虚拟电厂", "VPP", "virtual power plant",
                         "网络安全", "cybersecurity", "加密", "encryption", "攻击", "attack"]
         has_core = any(kw.lower() in text for kw in core_keywords)
-        return score >= 2 or has_core, matched_keywords
+        return score >= 1 or has_core, matched_keywords
 
     def fetch_rss(self, source, category):
         """抓取RSS源"""
