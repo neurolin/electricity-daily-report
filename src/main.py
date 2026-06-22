@@ -103,8 +103,18 @@ def main():
     print("\nStep 1: 抓取信息源...")
     items = fetch_all_sources()
 
-    if not items:
-        print("\n未抓取到新信息，工作流结束")
+        if not items:
+        print("\n未抓取到新信息，但仍推送状态提示")
+        # 推送空数据提示到飞书
+        webhook_url = os.getenv("FEISHU_WEBHOOK_URL")
+        if webhook_url:
+            payload = {
+                "msg_type": "text",
+                "content": {
+                    "text": f"电力领域情报简报 - {datetime.now().strftime('%Y-%m-%d')}\n\n今日未抓取到新信息。\n\n可能原因：\n- 信源暂无更新\n- 网络连接问题\n- 关键词过滤过严\n\n请检查日志了解详情。"
+                }
+            }
+            requests.post(webhook_url, json=payload, timeout=10)
         return
 
     print(f"\n共抓取 {len(items)} 条新信息")
