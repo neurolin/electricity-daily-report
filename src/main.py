@@ -15,7 +15,7 @@ from summarize import batch_summarize
 def push_to_feishu_webhook(items, webhook_url):
     """通过飞书群机器人 Webhook 推送简报"""
     if not webhook_url:
-        print("未配置 FEISHU_WEBHOOK_URL，跳过推送")
+        print("[WARN] 未配置 FEISHU_WEBHOOK_URL，跳过推送")
         return False
 
     today = datetime.now().strftime("%Y年%m月%d日")
@@ -33,20 +33,20 @@ def push_to_feishu_webhook(items, webhook_url):
 
     # 每条信息
     for i, item in enumerate(items[:20], 1):
-        category_icon = "【微电网】" if item["category"] == "微电网与虚拟电厂" else "【网络安全】"
+        category_icon = "[微电网]" if item["category"] == "微电网与虚拟电厂" else "[网络安全]"
         content += f"{i}. {category_icon} {item['title'][:60]}\n"
-        
+
         summary = item.get("ai_summary", "暂无摘要")
         if summary and summary != "[未配置API Key，无法生成摘要]":
             content += f"   摘要: {summary[:100]}...\n"
-        
+
         content += f"   链接: {item['link']}\n"
         content += f"   来源: {item['source_name']} | {item['source_type']}\n"
-        
+
         if item.get("matched_keywords"):
             tags = " | ".join(item["matched_keywords"][:3])
             content += f"   标签: {tags}\n"
-        
+
         content += "\n"
 
     # 页脚
@@ -64,16 +64,16 @@ def push_to_feishu_webhook(items, webhook_url):
     try:
         resp = requests.post(webhook_url, json=payload, timeout=30)
         result = resp.json()
-        
+
         if result.get("code") == 0:
-            print(f"飞书群消息推送成功！共 {len(items)} 条信息")
+            print(f"[OK] 飞书群消息推送成功！共 {len(items)} 条信息")
             return True
         else:
-            print(f"飞书推送失败: {result}")
+            print(f"[WARN] 飞书推送失败: {result}")
             return False
-            
+
     except Exception as e:
-        print(f"飞书推送异常: {e}")
+        print(f"[WARN] 飞书推送异常: {e}")
         return False
 
 
@@ -122,15 +122,15 @@ def main():
     # Step 3: 推送到飞书群（Webhook）
     print("\nStep 3: 推送到飞书群...")
     webhook_url = os.getenv("FEISHU_WEBHOOK_URL")
-    
+
     if webhook_url:
         result = push_to_feishu_webhook(items, webhook_url)
         if result:
-            print("\n工作流完成！简报已推送至飞书群")
+            print("\n[OK] 工作流完成！简报已推送至飞书群")
         else:
-            print("\n飞书推送失败，但数据已保存至 data/summarized_items.json")
+            print("\n[WARN] 飞书推送失败，但数据已保存至 data/summarized_items.json")
     else:
-        print("\n未配置 FEISHU_WEBHOOK_URL，跳过推送")
+        print("\n[WARN] 未配置 FEISHU_WEBHOOK_URL，跳过推送")
         print("   数据已保存至 data/summarized_items.json")
 
     print("=" * 70)
