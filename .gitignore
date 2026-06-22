@@ -5,9 +5,9 @@ __pycache__/
 *.so
 .Python
 
-# Data
-data/*.json
-!data/.gitkeep
+# Data - 只忽略临时输出文件
+data/raw_items.json
+data/summarized_items.json
 
 # Environment
 .env
