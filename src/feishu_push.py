@@ -25,7 +25,7 @@ class FeishuPusher:
             return self.access_token
 
         if not self.app_id or not self.app_secret:
-            print("⚠️ 未配置飞书应用凭证，跳过推送")
+            print("[WARN] 未配置飞书应用凭证，跳过推送")
             return None
 
         try:
@@ -40,10 +40,10 @@ class FeishuPusher:
                 self.token_expires = time.time() + result.get("expire", 7200)
                 return self.access_token
             else:
-                print(f"⚠️ 获取token失败: {result}")
+                print(f"[WARN] 获取token失败: {result}")
                 return None
         except Exception as e:
-            print(f"⚠️ 获取token异常: {e}")
+            print(f"[WARN] 获取token异常: {e}")
             return None
 
     def _build_blocks(self, items):
@@ -60,7 +60,7 @@ class FeishuPusher:
                     {
                         "type": "textRun",
                         "textRun": {
-                            "content": f"📋 电力领域情报简报 - {today}"
+                            "content": f"电力领域情报简报 - {today}"
                         },
                     }
                 ],
@@ -73,8 +73,8 @@ class FeishuPusher:
         sec_count = len([i for i in items if i["category"] == "电力系统网络安全"])
 
         overview = f"""本期共收录 {total} 条信息，其中：
-• 微电网与虚拟电厂: {mg_count} 条
-• 电力系统网络安全: {sec_count} 条
+- 微电网与虚拟电厂: {mg_count} 条
+- 电力系统网络安全: {sec_count} 条
 
 生成时间: {datetime.now().strftime("%Y-%m-%d %H:%M")}
 """
@@ -100,7 +100,7 @@ class FeishuPusher:
                 continue
 
             # 分类标题
-            icon = "🔹" if category == "微电网与虚拟电厂" else "🔒"
+            icon = "[微电网]" if category == "微电网与虚拟电厂" else "[网络安全]"
             blocks.append({
                 "block_type": 1,
                 "heading": {
@@ -135,7 +135,8 @@ class FeishuPusher:
                     if i["source_type"] == source_type
                     or (
                         source_type == "网页"
-                        and i["source_type"] not in ["学术期刊", "预印本", "RSS"]
+                        and i["source_type"]
+                        not in ["学术期刊", "预印本", "RSS"]
                     )
                 ]
                 if not type_items:
@@ -150,7 +151,7 @@ class FeishuPusher:
                             {
                                 "type": "textRun",
                                 "textRun": {
-                                    "content": f"📑 {source_type}"
+                                    "content": f"来源: {source_type}"
                                 },
                             }
                         ],
@@ -167,7 +168,7 @@ class FeishuPusher:
                                 {
                                     "type": "textRun",
                                     "textRun": {
-                                        "content": "📌 ",
+                                        "content": "标题: ",
                                         "text_style": {"bold": True},
                                     },
                                 },
@@ -191,7 +192,7 @@ class FeishuPusher:
                                 {
                                     "type": "textRun",
                                     "textRun": {
-                                        "content": f"💡 {summary_text}"
+                                        "content": f"摘要: {summary_text}"
                                     },
                                 }
                             ]
@@ -199,8 +200,7 @@ class FeishuPusher:
                     })
 
                     # 链接和来源
-                    link_text = f"🔗 {item['link']}
-📰 {item['source_name']}"
+                    link_text = f"链接: {item['link']}\n来源: {item['source_name']} | {item['source_type']}"
                     blocks.append({
                         "block_type": 2,
                         "text": {
@@ -223,7 +223,7 @@ class FeishuPusher:
                                     {
                                         "type": "textRun",
                                         "textRun": {
-                                            "content": "🏷️ ",
+                                            "content": "标签: ",
                                             "text_style": {"italic": True},
                                         },
                                     },
@@ -259,10 +259,7 @@ class FeishuPusher:
                     {
                         "type": "textRun",
                         "textRun": {
-                            "content": f"
----
-📌 本简报由AI自动生成，仅供学术参考
-⏰ 下次更新: {datetime.now().strftime('%Y-%m-%d')} 08:00"
+                            "content": f"\n---\n本简报由AI自动生成，仅供学术参考\n下次更新: {datetime.now().strftime('%Y-%m-%d')} 08:00"
                         },
                     }
                 ]
@@ -275,7 +272,7 @@ class FeishuPusher:
         """推送到飞书文档"""
         doc_token = self.doc_token
         if not doc_token:
-            print("⚠️ 未配置 FEISHU_DOC_TOKEN")
+            print("[WARN] 未配置 FEISHU_DOC_TOKEN")
             return False
 
         token = self._get_access_token()
@@ -294,7 +291,7 @@ class FeishuPusher:
             doc_info = resp.json()
 
             if doc_info.get("code") != 0:
-                print(f"⚠️ 获取文档信息失败: {doc_info}")
+                print(f"[WARN] 获取文档信息失败: {doc_info}")
                 return False
 
             root_block = doc_info["data"]["items"][0]["block_id"]
@@ -314,25 +311,25 @@ class FeishuPusher:
                 )
                 result = resp.json()
                 if result.get("code") != 0:
-                    print(f"⚠️ 追加内容失败(batch {i//batch_size+1}): {result}")
+                    print(f"[WARN] 追加内容失败(batch {i//batch_size+1}): {result}")
                     return False
                 time.sleep(0.5)
 
-            print(f"✓ 推送完成，共 {len(blocks)} 个内容块")
+            print(f"[OK] 推送完成，共 {len(blocks)} 个内容块")
 
             # 获取文档URL
             doc_url = f"https://www.feishu.cn/wiki/{doc_token}"
-            print(f"📄 文档链接: {doc_url}")
+            print(f"文档链接: {doc_url}")
             return True
 
         except Exception as e:
-            print(f"⚠️ 推送异常: {e}")
+            print(f"[WARN] 推送异常: {e}")
             return False
 
     def push_to_webhook(self, items, webhook_url):
         """通过Webhook推送到飞书群（备用方案）"""
         if not webhook_url:
-            print("⚠️ 未配置Webhook，跳过群推送")
+            print("[WARN] 未配置Webhook，跳过群推送")
             return False
 
         today = datetime.now().strftime("%Y-%m-%d")
@@ -345,7 +342,7 @@ class FeishuPusher:
                 "header": {
                     "title": {
                         "tag": "plain_text",
-                        "content": f"📋 电力领域情报简报 - {today}",
+                        "content": f"电力领域情报简报 - {today}",
                     },
                     "template": "blue",
                 },
@@ -354,9 +351,7 @@ class FeishuPusher:
                         "tag": "div",
                         "text": {
                             "tag": "lark_md",
-                            "content": f"**本期共收录 {total} 条信息**
-• 微电网与虚拟电厂
-• 电力系统网络安全",
+                            "content": f"**本期共收录 {total} 条信息**\n- 微电网与虚拟电厂\n- 电力系统网络安全",
                         },
                     },
                     {"tag": "hr"},
@@ -370,22 +365,20 @@ class FeishuPusher:
                 "tag": "div",
                 "text": {
                     "tag": "lark_md",
-                    "content": f"**📌 {item['title'][:50]}**
-💡 {item.get('ai_summary', '暂无摘要')[:80]}...
-🔗 [{item['source_name']}]({item['link']})",
+                    "content": f"**标题: {item['title'][:50]}**\n摘要: {item.get('ai_summary', '暂无摘要')[:80]}...\n链接: [{item['source_name']}]({item['link']})",
                 },
             })
 
         try:
             resp = requests.post(webhook_url, json=card, timeout=10)
             if resp.json().get("code") == 0:
-                print("✓ 群消息推送成功")
+                print("[OK] 群消息推送成功")
                 return True
             else:
-                print(f"⚠️ 群推送失败: {resp.json()}")
+                print(f"[WARN] 群推送失败: {resp.json()}")
                 return False
         except Exception as e:
-            print(f"⚠️ 群推送异常: {e}")
+            print(f"[WARN] 群推送异常: {e}")
             return False
 
 
