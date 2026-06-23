@@ -1,6 +1,7 @@
 """
 AI摘要模块
 使用Kimi API对抓取的内容进行200字摘要
+添加重试机制和指数退避，避免API过载
 """
 import requests
 import time
@@ -16,6 +17,8 @@ class Summarizer:
         self.temperature = SUMMARY_CONFIG["temperature"]
         self.max_length = SUMMARY_CONFIG["max_length"]
         self.api_url = "https://api.moonshot.cn/v1/chat/completions"
+        self.max_retries = 3  # 最大重试次数
+        self.base_delay = 2   # 基础间隔2秒
     
     def _build_prompt(self, title, content, category):
         """构建摘要提示词"""
@@ -42,49 +45,84 @@ class Summarizer:
         return prompt
     
     def summarize(self, title, content, category):
-        """单条摘要"""
+        """单条摘要，带重试机制"""
         if not self.api_key:
-            print("  [WARN] 未配置KIMI_API_KEY，跳过摘要: " + title[:30] + "...")
-            return "[未配置API Key，无法生成摘要]"
+            print("  [WARN] 未配置KIMI_API_KEY，使用原文摘要")
+            return self._fallback_summary(content, title)
         
-        try:
-            prompt = self._build_prompt(title, content, category)
-            
-            resp = requests.post(
-                self.api_url,
-                headers={
-                    "Authorization": "Bearer " + self.api_key,
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "model": self.model,
-                    "messages": [
-                        {"role": "system", "content": "你是一位电力系统领域的资深专家，擅长为高校教师提炼学术和行业信息的核心要点。摘要要充分完整，不要过度精简。"},
-                        {"role": "user", "content": prompt}
-                    ],
-                    "temperature": self.temperature,
-                    "max_tokens": 350
-                },
-                timeout=60
-            )
-            
-            result = resp.json()
-            if "choices" in result and len(result["choices"]) > 0:
-                summary = result["choices"][0]["message"]["content"].strip()
-                # 清理摘要
-                summary = summary.replace("摘要：", "").replace("摘要", "")
-                return summary
-            else:
-                error_msg = result.get("error", {}).get("message", "未知错误")
-                print("  [WARN] API返回异常: " + error_msg)
-                return "[摘要生成失败: " + error_msg + "]"
+        prompt = self._build_prompt(title, content, category)
+        
+        # 重试循环
+        for attempt in range(self.max_retries):
+            try:
+                resp = requests.post(
+                    self.api_url,
+                    headers={
+                        "Authorization": "Bearer " + self.api_key,
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": self.model,
+                        "messages": [
+                            {"role": "system", "content": "你是一位电力系统领域的资深专家，擅长为高校教师提炼学术和行业信息的核心要点。摘要要充分完整，不要过度精简。"},
+                            {"role": "user", "content": prompt}
+                        ],
+                        "temperature": self.temperature,
+                        "max_tokens": 350
+                    },
+                    timeout=60
+                )
                 
-        except requests.exceptions.Timeout:
-            print("  [WARN] API请求超时: " + title[:30] + "...")
-            return "[API请求超时]"
-        except Exception as e:
-            print("  [WARN] 摘要失败: " + title[:30] + "... - " + str(e))
-            return "[摘要生成失败: " + str(e)[:50] + "]"
+                result = resp.json()
+                
+                # 检查是否过载
+                if result.get("error", {}).get("message", "").find("overloaded") != -1:
+                    print("  [WARN] API过载，等待后重试 (" + str(attempt + 1) + "/" + str(self.max_retries) + ")")
+                    time.sleep(self.base_delay * (attempt + 1))  # 指数退避：2s, 4s, 6s
+                    continue
+                
+                # 检查其他错误
+                if "error" in result:
+                    error_msg = result.get("error", {}).get("message", "未知错误")
+                    print("  [WARN] API错误: " + error_msg + "，重试 (" + str(attempt + 1) + "/" + str(self.max_retries) + ")")
+                    time.sleep(self.base_delay * (attempt + 1))
+                    continue
+                
+                # 成功
+                if "choices" in result and len(result["choices"]) > 0:
+                    summary = result["choices"][0]["message"]["content"].strip()
+                    summary = summary.replace("摘要：", "").replace("摘要", "")
+                    return summary
+                
+            except requests.exceptions.Timeout:
+                print("  [WARN] API请求超时，重试 (" + str(attempt + 1) + "/" + str(self.max_retries) + ")")
+                time.sleep(self.base_delay * (attempt + 1))
+                continue
+            except Exception as e:
+                print("  [WARN] 请求异常: " + str(e) + "，重试 (" + str(attempt + 1) + "/" + str(self.max_retries) + ")")
+                time.sleep(self.base_delay * (attempt + 1))
+                continue
+        
+        # 所有重试都失败，使用原文摘要
+        print("  [WARN] 所有重试失败，使用原文摘要")
+        return self._fallback_summary(content, title)
+    
+    def _fallback_summary(self, content, title):
+        """API失败时的备用摘要：提取原文前200字"""
+        text = content if content else title
+        text = text.strip()
+        
+        if len(text) > 200:
+            # 提取前200字，尽量在句号处截断
+            truncated = text[:200]
+            last_period = truncated.rfind("。")
+            last_space = truncated.rfind(" ")
+            cut_point = max(last_period, last_space)
+            if cut_point > 150:
+                truncated = truncated[:cut_point + 1]
+            return truncated + " [原文摘要，API暂时不可用]"
+        else:
+            return text + " [原文摘要，API暂时不可用]"
     
     def batch_summarize(self, items):
         """批量摘要"""
@@ -110,7 +148,9 @@ class Summarizer:
             item["ai_summary"] = ai_summary
             summarized_items.append(item)
             
-            time.sleep(0.5)
+            # 增加间隔，避免API过载
+            if i < len(items) - 1:
+                time.sleep(self.base_delay)
         
         print("")
         print("[OK] 摘要完成: " + str(len(summarized_items)) + " 条")
